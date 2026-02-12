@@ -52,6 +52,40 @@ class WeatherService {
     }
   }
 
+  async reverseGeocodeCoordinates(latitude, longitude) {
+    try {
+      const apiKey = process.env.REACT_APP_WEATHER_API_KEY;
+      if (!apiKey) {
+        throw new Error('Weather API key is not configured');
+      }
+
+      const response = await axios.get('https://api.openweathermap.org/geo/1.0/reverse', {
+        params: {
+          lat: latitude,
+          lon: longitude,
+          limit: 1,
+          appid: apiKey
+        }
+      });
+
+      const [location] = response.data || [];
+      if (!location) {
+        return null;
+      }
+
+      return {
+        name: location.name,
+        country: location.country,
+        lat: location.lat,
+        lon: location.lon,
+        displayName: `${location.name}, ${location.state ? location.state + ', ' : ''}${location.country}`
+      };
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      return null;
+    }
+  }
+
   // Location Management
   async getAllLocations(units = 'METRIC') {
     const response = await this.api.get('/weather/locations', {
