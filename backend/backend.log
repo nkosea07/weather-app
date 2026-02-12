@@ -1,0 +1,78 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.uzwide:WeatherApp >------------------------
+[INFO] Building WeatherApp 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:4.0.2:run (default-cli) > test-compile @ WeatherApp >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ WeatherApp ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 3 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ WeatherApp ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 25 source files with javac [debug parameters release 17] to target/classes
+[INFO] /Users/nkosinxumalo/WebProjects/WeatherApp/backend/src/main/java/com/uzwide/WeatherApp/service/ForecastService.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/nkosinxumalo/WebProjects/WeatherApp/backend/src/main/java/com/uzwide/WeatherApp/service/ForecastService.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ WeatherApp ---
+[INFO] skip non existing resourceDirectory /Users/nkosinxumalo/WebProjects/WeatherApp/backend/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ WeatherApp ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 1 source file with javac [debug parameters release 17] to target/test-classes
+[INFO] 
+[INFO] <<< spring-boot:4.0.2:run (default-cli) < test-compile @ WeatherApp <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:4.0.2:run (default-cli) @ WeatherApp ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.2)
+
+2026-02-12T19:30:02.107+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] c.u.WeatherApp.WeatherAppApplication     : Starting WeatherAppApplication using Java 23.0.1 with PID 4500 (/Users/nkosinxumalo/WebProjects/WeatherApp/backend/target/classes started by nkosinxumalo in /Users/nkosinxumalo/WebProjects/WeatherApp/backend)
+2026-02-12T19:30:02.109+02:00 DEBUG 4500 --- [WeatherApp] [  restartedMain] c.u.WeatherApp.WeatherAppApplication     : Running with Spring Boot v4.0.2, Spring v7.0.3
+2026-02-12T19:30:02.110+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] c.u.WeatherApp.WeatherAppApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-02-12T19:30:02.160+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-02-12T19:30:02.160+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-02-12T19:30:03.291+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-12T19:30:03.337+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 38 ms. Found 3 JPA repository interfaces.
+2026-02-12T19:30:03.892+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-02-12T19:30:03.906+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-12T19:30:03.906+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.15]
+2026-02-12T19:30:03.932+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1771 ms
+2026-02-12T19:30:04.060+02:00  WARN 4500 --- [WeatherApp] [  restartedMain] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/hibernate/autoconfigure/HibernateJpaConfiguration.class]: 'entityManagerFactory' depends on missing bean 'cacheManager'
+2026-02-12T19:30:04.062+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+2026-02-12T19:30:04.075+02:00  INFO 4500 --- [WeatherApp] [  restartedMain] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-02-12T19:30:04.086+02:00 ERROR 4500 --- [WeatherApp] [  restartedMain] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+A component required a bean named 'cacheManager' that could not be found.
+
+
+Action:
+
+Consider defining a bean named 'cacheManager' in your configuration.
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  9.469 s
+[INFO] Finished at: 2026-02-12T19:30:04+02:00
+[INFO] ------------------------------------------------------------------------
