@@ -18,6 +18,9 @@ function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [units, setUnits] = useState('METRIC');
   const [activeView, setActiveView] = useState('dashboard');
+  const [locationsError, setLocationsError] = useState(null);
+  const [lastSyncAt, setLastSyncAt] = useState(null);
+  const [sessionRefreshCount, setSessionRefreshCount] = useState(0);
 
   useEffect(() => {
     fetchUserPreferences();
@@ -55,10 +58,13 @@ function App() {
   const fetchLocations = async () => {
     try {
       setLoading(true);
+      setLocationsError(null);
       const data = await weatherService.getAllLocations(units);
       setLocations(data);
+      setLastSyncAt(new Date().toISOString());
     } catch (error) {
       console.error('Failed to fetch locations:', error);
+      setLocationsError(error);
       toast.error('Failed to load locations');
     } finally {
       setLoading(false);
@@ -72,6 +78,7 @@ function App() {
         locations.map(loc => weatherService.refreshWeather(loc.locationId, units))
       );
       await fetchLocations();
+      setSessionRefreshCount((count) => count + 1);
       toast.success('Weather data refreshed');
     } catch (error) {
       console.error('Failed to refresh all:', error);
@@ -193,7 +200,15 @@ function App() {
 
           <main className="mt-8 space-y-8">
             <div className="glass-panel p-6 sm:p-8">
-              <DashboardOverview />
+              <DashboardOverview
+                locations={locations}
+                loading={loading}
+                refreshing={refreshing}
+                onRefreshAll={handleRefreshAll}
+                lastSyncAt={lastSyncAt}
+                sessionRefreshCount={sessionRefreshCount}
+                hasError={Boolean(locationsError)}
+              />
             </div>
             {loading ? (
               <div className="glass-panel flex h-64 items-center justify-center">
