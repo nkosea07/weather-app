@@ -9,7 +9,7 @@ import ApiTester from './components/ApiTester';
 import ApiDocumentation from './components/ApiDocumentation';
 import weatherService from './services/weatherService';
 import userPreferencesService from './services/userPreferencesService';
-import { FiSun, FiRefreshCw, FiPlus, FiSettings } from 'react-icons/fi';
+import { FiSun, FiRefreshCw, FiPlus, FiMapPin, FiStar } from 'react-icons/fi';
 
 function App() {
   const [locations, setLocations] = useState([]);
@@ -17,7 +17,6 @@ function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [units, setUnits] = useState('METRIC');
-  const [preferencesLoading, setPreferencesLoading] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
 
   useEffect(() => {
@@ -34,13 +33,10 @@ function App() {
 
   const fetchUserPreferences = async () => {
     try {
-      setPreferencesLoading(true);
       const preferences = await userPreferencesService.getUserPreferences();
       setUnits(preferences.defaultUnits || 'METRIC');
     } catch (error) {
       console.error('Failed to fetch user preferences:', error);
-    } finally {
-      setPreferencesLoading(false);
     }
   };
 
@@ -106,56 +102,91 @@ function App() {
     updateUserPreferences(newUnits);
   };
 
+  const favoriteCount = locations.filter((loc) => loc.isFavorite).length;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-      <Toaster position="top-right" />
+    <div className="app-shell">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            borderRadius: '12px',
+            border: '1px solid rgba(148, 163, 184, 0.3)',
+            background: 'rgba(255, 255, 255, 0.92)',
+            color: '#0f172a',
+          },
+        }}
+      />
+
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-20 top-16 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl animate-float-slow" />
+        <div className="absolute right-8 top-24 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl animate-float-slow" />
+        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-cyan-400/15 blur-3xl" />
+      </div>
 
       <Navigation activeView={activeView} onViewChange={setActiveView} />
 
       {activeView === 'dashboard' && (
         <>
-          <nav className="bg-white shadow-lg">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between h-16">
-                <div className="flex items-center">
-                  <FiSun className="h-8 w-8 text-yellow-500" />
-                  <h1 className="ml-2 text-xl font-bold text-gray-800">
-                    Weather Platform
+          <section className="glass-panel mt-6 animate-fade-in-up">
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="inline-flex items-center rounded-full bg-amber-300/15 px-3 py-1 text-xs font-semibold tracking-wide text-amber-200">
+                    <FiSun className="mr-2 h-4 w-4" />
+                    Live weather operations
+                  </div>
+                  <h1 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+                    Forecast control center
                   </h1>
+                  <p className="mt-2 max-w-xl text-sm text-slate-200 sm:text-base">
+                    Track every city, refresh with one click, and keep top priorities pinned.
+                  </p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <UnitsSelector
-                    units={units}
-                    onUnitsChange={handleUnitsChange}
-                    showLabel={false}
-                  />
-                  <button
-                    onClick={handleRefreshAll}
-                    disabled={refreshing}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                  >
-                    <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                    Refresh All
+
+                <div className="flex flex-wrap gap-3 sm:gap-4">
+                  <UnitsSelector units={units} onUnitsChange={handleUnitsChange} showLabel={true} />
+                  <button onClick={handleRefreshAll} disabled={refreshing} className="action-btn">
+                    <FiRefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh all
                   </button>
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <FiPlus className="mr-2 h-4 w-4" />
-                    Add Location
+                  <button onClick={() => setIsAddModalOpen(true)} className="action-btn-primary">
+                    <FiPlus className="h-4 w-4" />
+                    Add location
                   </button>
                 </div>
               </div>
-            </div>
-          </nav>
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8">
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/15 bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-300">Tracked</p>
+                  <p className="mt-1 flex items-center text-2xl font-bold text-white">
+                    <FiMapPin className="mr-2 h-5 w-5 text-cyan-300" />
+                    {locations.length}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/15 bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-300">Favorites</p>
+                  <p className="mt-1 flex items-center text-2xl font-bold text-white">
+                    <FiStar className="mr-2 h-5 w-5 text-amber-300" />
+                    {favoriteCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/15 bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-300">Units</p>
+                  <p className="mt-1 text-2xl font-bold text-white">{units}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <main className="mt-8 space-y-8">
+            <div className="glass-panel p-6 sm:p-8">
               <DashboardOverview />
             </div>
             {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="glass-panel flex h-64 items-center justify-center">
+                <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-sky-300"></div>
               </div>
             ) : (
               <WeatherDashboard
@@ -164,6 +195,7 @@ function App() {
                 onDelete={handleLocationDeleted}
                 onToggleFavorite={handleToggleFavorite}
                 onRefresh={fetchLocations}
+                onAddLocation={() => setIsAddModalOpen(true)}
               />
             )}
           </main>
@@ -181,10 +213,12 @@ function App() {
       {activeView === 'api-docs' && <ApiDocumentation />}
 
       {activeView === 'settings' && (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4">Settings</h2>
-            <p className="text-gray-600">Application settings and configuration coming soon...</p>
+        <div className="mt-8">
+          <div className="glass-panel p-6 sm:p-8">
+            <h2 className="text-2xl font-bold text-white">Settings</h2>
+            <p className="mt-2 text-slate-200">
+              Application settings and configuration are coming soon.
+            </p>
           </div>
         </div>
       )}

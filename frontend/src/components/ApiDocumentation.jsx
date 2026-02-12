@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiCopy, FiCheck, FiBook, FiCode, FiServer, FiDatabase } from 'react-icons/fi';
+import { FiCopy, FiCheck, FiBook, FiCode, FiServer, FiDatabase, FiCloud, FiUser } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const ApiDocumentation = () => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiServer, FiDatabase, FiActivity, FiCloud, FiUsers, FiMapPin, FiRefreshCw, FiTrendingUp, FiAlertCircle } from 'react-icons/fi';
+import { FiServer, FiDatabase, FiActivity, FiCloud, FiUsers, FiMapPin, FiRefreshCw, FiTrendingUp, FiHeart, FiTrash2 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const DashboardOverview = () => {
@@ -73,7 +73,7 @@ const DashboardOverview = () => {
       title: 'API Calls Today',
       value: stats.apiCallsToday,
       icon: FiActivity,
-      color: 'bg-purple-500',
+      color: 'bg-cyan-600',
       change: '+45',
       changeType: 'increase'
     }
@@ -128,13 +128,13 @@ const DashboardOverview = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-          <p className="text-gray-600">System status and performance metrics</p>
+          <h1 className="text-2xl font-bold text-white">Dashboard Overview</h1>
+          <p className="text-slate-200">System status and performance metrics</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          className="inline-flex items-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20 disabled:opacity-50"
         >
           <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -241,7 +241,7 @@ const DashboardOverview = () => {
           <button className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700">
             <FiDatabase className="mr-2" /> Clear Cache
           </button>
-          <button className="flex items-center justify-center px-4 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+          <button className="flex items-center justify-center px-4 py-3 bg-slate-700 text-white rounded-md hover:bg-slate-800">
             <FiActivity className="mr-2" /> View Logs
           </button>
         </div>
