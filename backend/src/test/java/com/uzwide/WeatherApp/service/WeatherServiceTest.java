@@ -80,6 +80,37 @@ class WeatherServiceTest {
     }
 
     @Test
+    void addLocationAcceptsCountryDisplayNameAndNormalizesToIsoCode() {
+        LocationDTO dto = new LocationDTO();
+        dto.setName("Cape Town");
+        dto.setCountry("South Africa");
+        dto.setLatitude(-33.9249);
+        dto.setLongitude(18.4241);
+
+        when(locationRepository.findByNameAndCountry("Cape Town", "ZA"))
+                .thenReturn(Optional.empty());
+        when(locationRepository.save(any(Location.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Location saved = weatherService.addLocation(dto);
+
+        assertEquals("ZA", saved.getCountry());
+        verify(locationRepository).save(any(Location.class));
+    }
+
+    @Test
+    void addLocationThrowsWhenCountryCannotBeNormalized() {
+        LocationDTO dto = new LocationDTO();
+        dto.setName("Cape Town");
+        dto.setCountry("NotACountry");
+        dto.setLatitude(-33.9249);
+        dto.setLongitude(18.4241);
+
+        assertThrows(IllegalArgumentException.class, () -> weatherService.addLocation(dto));
+        verify(locationRepository, never()).save(any(Location.class));
+    }
+
+    @Test
     void updateLocationUpdatesDisplayNameAndFavorite() {
         Location existing = new Location();
         existing.setId(5L);

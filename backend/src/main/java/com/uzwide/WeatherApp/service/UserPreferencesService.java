@@ -20,7 +20,7 @@ public class UserPreferencesService {
     private final UserPreferencesRepository userPreferencesRepository;
 
     @Cacheable(value = "userPreferences")
-    @Transactional(readOnly = true)
+    @Transactional
     public UserPreferencesDTO getUserPreferences() {
         UserPreferences preferences = userPreferencesRepository.findFirstByOrderByIdAsc()
                 .orElseGet(this::createDefaultPreferences);

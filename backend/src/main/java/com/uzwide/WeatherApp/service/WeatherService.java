@@ -22,6 +22,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,20 +49,21 @@ public class WeatherService {
 
     @Transactional
     public Location addLocation(LocationDTO locationDTO) {
+        String normalizedCountryCode = normalizeCountryCode(locationDTO.getCountry());
         Optional<Location> existing = locationRepository.findByNameAndCountry(
-                locationDTO.getName(), locationDTO.getCountry()
+                locationDTO.getName(), normalizedCountryCode
         );
 
         if (existing.isPresent()) {
             throw new DuplicateLocationException(
                     String.format("Location %s, %s already exists",
-                            locationDTO.getName(), locationDTO.getCountry())
+                            locationDTO.getName(), normalizedCountryCode)
             );
         }
 
         Location location = new Location();
         location.setName(locationDTO.getName());
-        location.setCountry(locationDTO.getCountry());
+        location.setCountry(normalizedCountryCode);
         location.setLatitude(locationDTO.getLatitude());
         location.setLongitude(locationDTO.getLongitude());
         location.setDisplayName(locationDTO.getDisplayName());
@@ -253,5 +255,25 @@ public class WeatherService {
                 .lastUpdated(weatherSnapshot.getFetchedAt())
                 .isFavorite(location.getIsFavorite())
                 .build();
+    }
+
+    private String normalizeCountryCode(String countryInput) {
+        if (countryInput == null || countryInput.isBlank()) {
+            throw new IllegalArgumentException("Country is required");
+        }
+
+        String value = countryInput.trim();
+        if (value.length() == 2) {
+            return value.toUpperCase(Locale.ROOT);
+        }
+
+        for (String isoCode : Locale.getISOCountries()) {
+            String displayName = new Locale("", isoCode).getDisplayCountry(Locale.ENGLISH);
+            if (displayName.equalsIgnoreCase(value)) {
+                return isoCode;
+            }
+        }
+
+        throw new IllegalArgumentException("Country must be a valid 2-letter ISO code or recognized country name");
     }
 }
