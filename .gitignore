@@ -1,40 +1,37 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# OS files
+.DS_Store
 
-### STS ###
+# Logs
+*.log
+
+# Maven / Java
+target/
+**/target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/build/
+node_modules/
+
+# Environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# IDE/editor
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/
-
-
-/frontend/.env.example
-/frontend/.env
-
-/frontend/node_modules
-node_modules/
+nbproject/
