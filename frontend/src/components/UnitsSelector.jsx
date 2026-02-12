@@ -9,17 +9,17 @@ const UnitsSelector = ({ units, onUnitsChange, showLabel = true }) => {
   ];
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center gap-2">
       {showLabel && (
-        <div className="flex items-center text-sm text-gray-600">
-          <FiSettings className="h-4 w-4 mr-1" />
-          <span>Units:</span>
+        <div className="flex items-center text-sm text-slate-200">
+          <FiSettings className="mr-1 h-4 w-4" />
+          <span>Units</span>
         </div>
       )}
       <select
         value={units}
         onChange={(e) => onUnitsChange(e.target.value)}
-        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border bg-white"
+        className="block min-w-[12rem] rounded-xl border border-white/20 bg-white/90 py-2 pl-3 pr-10 text-sm font-medium text-slate-700 shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
       >
         {unitOptions.map(option => (
           <option key={option.value} value={option.value}>

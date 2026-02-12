@@ -59,39 +59,42 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-md w-full mx-4">
-        <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-800">Add Location</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/20 bg-white shadow-soft">
+        <div className="flex items-center justify-between border-b border-slate-200/80 bg-slate-50 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800">Add location</h2>
+            <p className="mt-1 text-sm text-slate-500">Search by city name and choose a result.</p>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="rounded-full p-2 transition-colors hover:bg-slate-200"
           >
-            <FiX className="h-5 w-5 text-gray-500" />
+            <FiX className="h-5 w-5 text-slate-500" />
           </button>
         </div>
 
         <div className="p-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded">
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
-          
-          <div className="flex space-x-2">
+
+          <div className="flex gap-2">
             <input
               type="text"
               value={cityName}
               onChange={handleInputChange}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Enter city name..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Enter city name (e.g. Cape Town)"
+              className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
               autoFocus
             />
             <button
               onClick={handleSearch}
               disabled={loading || !cityName.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center"
+              className="inline-flex items-center rounded-xl bg-sky-600 px-4 py-2.5 font-semibold text-white transition hover:bg-sky-700 disabled:opacity-50"
             >
               <FiSearch className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -99,24 +102,24 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
 
           {showResults && (
             <div className="mt-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Search Results
+              <h3 className="mb-2 text-sm font-semibold text-slate-700">
+                Search results
               </h3>
               {searchResults.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
+                <div className="rounded-xl bg-slate-100 py-5 text-center text-slate-500">
                   <p>No locations found for "{cityName}"</p>
                   <p className="text-sm mt-1">Try a different search term</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                   {searchResults.map((result, index) => (
                     <button
                       key={index}
                       onClick={() => handleAddLocation(result)}
-                      className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50"
                     >
-                      <p className="font-medium text-gray-800">{result.displayName}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-slate-800">{result.displayName}</p>
+                      <p className="text-sm text-slate-500">
                         Lat: {result.lat.toFixed(4)}, Lon: {result.lon.toFixed(4)}
                       </p>
                     </button>
