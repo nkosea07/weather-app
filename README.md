@@ -122,6 +122,24 @@ The application will start on `http://localhost:8080`
 ### 5. Database Migration
 Flyway will automatically run database migrations on startup. No manual setup required.
 
+### 6. Run With Docker (Frontend + Backend + DB)
+Use Docker Compose to build and run everything at once:
+
+```bash
+export WEATHER_API_KEY=your_openweathermap_api_key # optional, defaults to demo_key
+docker compose up --build
+```
+
+Services:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- PostgreSQL: localhost:5432
+
+To stop:
+```bash
+docker compose down
+```
+
 ## API Usage Examples
 
 ### Add a Location
