@@ -1,44 +1,62 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FiX, FiSearch, FiMapPin, FiNavigation, FiWifiOff, FiCrosshair } from 'react-icons/fi';
 import weatherService from '../services/weatherService';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 const DEFAULT_CENTER = [20, 0];
+const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+let leafletLoaderPromise = null;
+
+const loadLeafletAssets = () => {
+  if (typeof window !== 'undefined' && window.L) {
+    return Promise.resolve(window.L);
+  }
+
+  if (leafletLoaderPromise) {
+    return leafletLoaderPromise;
+  }
+
+  leafletLoaderPromise = new Promise((resolve, reject) => {
+    if (!document.querySelector('link[data-leaflet-css="true"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = LEAFLET_CSS_URL;
+      link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+      link.crossOrigin = '';
+      link.setAttribute('data-leaflet-css', 'true');
+      document.head.appendChild(link);
+    }
+
+    const existingScript = document.querySelector('script[data-leaflet-js="true"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(window.L), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load Leaflet')), {
+        once: true,
+      });
+      if (window.L) {
+        resolve(window.L);
+      }
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = LEAFLET_JS_URL;
+    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+    script.crossOrigin = '';
+    script.async = true;
+    script.setAttribute('data-leaflet-js', 'true');
+    script.onload = () => resolve(window.L);
+    script.onerror = () => reject(new Error('Failed to load Leaflet'));
+    document.body.appendChild(script);
+  });
+
+  return leafletLoaderPromise;
+};
 
 const parseCoordinate = (value) => {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : null;
-};
-
-const MapCenterUpdater = ({ center, zoom }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-
-  return null;
-};
-
-const MapClickSelector = ({ onSelect }) => {
-  useMapEvents({
-    click(event) {
-      onSelect(event.latlng.lat, event.latlng.lng);
-    },
-  });
-
-  return null;
 };
 
 const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
@@ -61,6 +79,31 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
   const [error, setError] = useState(null);
   const [infoMessage, setInfoMessage] = useState('');
 
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+
+  const selectedPosition = useMemo(() => {
+    const latitude = parseCoordinate(manualLocation.latitude);
+    const longitude = parseCoordinate(manualLocation.longitude);
+
+    if (latitude === null || longitude === null) return null;
+    if (latitude > 90 || latitude < -90 || longitude > 180 || longitude < -180) return null;
+    return [latitude, longitude];
+  }, [manualLocation.latitude, manualLocation.longitude]);
+
+  const destroyMap = () => {
+    if (markerRef.current) {
+      markerRef.current.remove();
+      markerRef.current = null;
+    }
+
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+  };
+
   useEffect(() => {
     const updateOnlineStatus = () => setIsOnline(navigator.onLine);
     window.addEventListener('online', updateOnlineStatus);
@@ -72,16 +115,15 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
     };
   }, []);
 
-  const selectedPosition = useMemo(() => {
-    const latitude = parseCoordinate(manualLocation.latitude);
-    const longitude = parseCoordinate(manualLocation.longitude);
+  useEffect(() => {
+    if (!isOpen) {
+      destroyMap();
+    }
+  }, [isOpen]);
 
-    if (latitude === null || longitude === null) return null;
-    if (latitude > 90 || latitude < -90 || longitude > 180 || longitude < -180) return null;
-    return [latitude, longitude];
-  }, [manualLocation.latitude, manualLocation.longitude]);
-
-  const mapZoom = selectedPosition ? 10 : 2;
+  useEffect(() => {
+    return () => destroyMap();
+  }, []);
 
   const resetModalState = () => {
     setCityName('');
@@ -101,6 +143,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
     });
     setError(null);
     setInfoMessage('');
+    destroyMap();
   };
 
   const closeModal = () => {
@@ -117,9 +160,9 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
       const results = await weatherService.searchLocations(cityName.trim());
       setSearchResults(results);
       setShowResults(true);
-    } catch (error) {
-      setError(error.message || 'Failed to search locations');
-      console.error('Search failed:', error);
+    } catch (searchError) {
+      setError(searchError.message || 'Failed to search locations');
+      console.error('Search failed:', searchError);
     } finally {
       setLoading(false);
     }
@@ -134,20 +177,20 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
         latitude: result.lat,
         longitude: result.lon,
         displayName: result.displayName,
-        isFavorite: false
+        isFavorite: false,
       });
       resetModalState();
       onLocationAdded();
-    } catch (error) {
-      setError(error.message || 'Failed to add location');
-      console.error('Failed to add location:', error);
+    } catch (addError) {
+      setError(addError.message || 'Failed to add location');
+      console.error('Failed to add location:', addError);
     }
   };
 
-  const handleInputChange = (e) => {
-    setCityName(e.target.value);
+  const handleInputChange = (event) => {
+    setCityName(event.target.value);
     setError(null);
-    if (showResults && e.target.value.trim() === '') {
+    if (showResults && event.target.value.trim() === '') {
       setShowResults(false);
       setSearchResults([]);
     }
@@ -201,9 +244,10 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
         setLocating(false);
       },
       (locationError) => {
-        const message = locationError.code === 1
-          ? 'Permission denied. Enable location permission or enter coordinates manually.'
-          : 'Could not get current location. Enter coordinates manually.';
+        const message =
+          locationError.code === 1
+            ? 'Permission denied. Enable location permission or enter coordinates manually.'
+            : 'Could not get current location. Enter coordinates manually.';
         setError(message);
         setLocating(false);
       },
@@ -234,12 +278,14 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
       return;
     }
 
-    const displayName = manualLocation.displayName.trim()
-      || manualLocation.name.trim()
-      || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-    const name = manualLocation.name.trim()
-      || manualLocation.displayName.trim()
-      || `Location ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+    const displayName =
+      manualLocation.displayName.trim() ||
+      manualLocation.name.trim() ||
+      `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    const name =
+      manualLocation.name.trim() ||
+      manualLocation.displayName.trim() ||
+      `Location ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
 
     setManualSubmitting(true);
     setError(null);
@@ -262,6 +308,59 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
     }
   };
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isOpen || activeMode !== 'coordinates' || !isOnline) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const initializeMap = async () => {
+      try {
+        const L = await loadLeafletAssets();
+        if (cancelled || !mapContainerRef.current) return;
+
+        if (!mapRef.current) {
+          const map = L.map(mapContainerRef.current);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          }).addTo(map);
+          map.on('click', (event) => {
+            handleMapSelect(event.latlng.lat, event.latlng.lng);
+          });
+          mapRef.current = map;
+        }
+
+        const targetCenter = selectedPosition || mapCenter;
+        const zoom = selectedPosition ? 10 : 2;
+        mapRef.current.setView(targetCenter, zoom);
+
+        if (selectedPosition) {
+          if (!markerRef.current) {
+            markerRef.current = L.marker(selectedPosition).addTo(mapRef.current);
+          } else {
+            markerRef.current.setLatLng(selectedPosition);
+          }
+        } else if (markerRef.current) {
+          markerRef.current.remove();
+          markerRef.current = null;
+        }
+      } catch (leafletError) {
+        console.error('Map initialization failed:', leafletError);
+        setInfoMessage('Map is unavailable. Enter latitude and longitude manually.');
+      }
+    };
+
+    initializeMap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, activeMode, isOnline, mapCenter, selectedPosition]);
+
   if (!isOpen) return null;
 
   return (
@@ -274,10 +373,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
               Search by city or pick coordinates with map/manual fallback.
             </p>
           </div>
-          <button
-            onClick={closeModal}
-            className="rounded-full p-2 transition-colors hover:bg-slate-200"
-          >
+          <button onClick={closeModal} className="rounded-full p-2 transition-colors hover:bg-slate-200">
             <FiX className="h-5 w-5 text-slate-500" />
           </button>
         </div>
@@ -327,7 +423,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                   type="text"
                   value={cityName}
                   onChange={handleInputChange}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
                   placeholder="Enter city name (e.g. Cape Town)"
                   className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
                   autoFocus
@@ -343,9 +439,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
 
               {showResults && (
                 <div className="mt-4">
-                  <h3 className="mb-2 text-sm font-semibold text-slate-700">
-                    Search results
-                  </h3>
+                  <h3 className="mb-2 text-sm font-semibold text-slate-700">Search results</h3>
                   {searchResults.length === 0 ? (
                     <div className="rounded-xl bg-slate-100 py-5 text-center text-slate-500">
                       <p>No locations found for "{cityName}"</p>
@@ -389,24 +483,12 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                     Offline: use manual latitude/longitude fields below.
                   </span>
                 )}
-                {isOnline && (
-                  <span className="text-xs text-slate-500">
-                    Click on the map to select coordinates.
-                  </span>
-                )}
+                {isOnline && <span className="text-xs text-slate-500">Click on the map to select coordinates.</span>}
               </div>
 
               {isOnline && (
                 <div className="overflow-hidden rounded-xl border border-slate-200">
-                  <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom className="h-64 w-full">
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <MapCenterUpdater center={mapCenter} zoom={mapZoom} />
-                    <MapClickSelector onSelect={handleMapSelect} />
-                    {selectedPosition && <Marker position={selectedPosition} />}
-                  </MapContainer>
+                  <div ref={mapContainerRef} className="h-64 w-full" />
                 </div>
               )}
 
