@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import WeatherDashboard from './components/WeatherDashboard';
 import DashboardOverview from './components/DashboardOverview';
 import AddLocationModal from './components/AddLocationModal';
@@ -37,6 +37,7 @@ function App() {
       setUnits(preferences.defaultUnits || 'METRIC');
     } catch (error) {
       console.error('Failed to fetch user preferences:', error);
+      toast.error('Failed to load user preferences');
     }
   };
 
@@ -44,8 +45,10 @@ function App() {
     try {
       await userPreferencesService.updateUserPreferences({ defaultUnits: newUnits });
       setUnits(newUnits);
+      toast.success(`Units set to ${newUnits}`);
     } catch (error) {
       console.error('Failed to update user preferences:', error);
+      toast.error('Failed to update units');
     }
   };
 
@@ -56,6 +59,7 @@ function App() {
       setLocations(data);
     } catch (error) {
       console.error('Failed to fetch locations:', error);
+      toast.error('Failed to load locations');
     } finally {
       setLoading(false);
     }
@@ -68,8 +72,10 @@ function App() {
         locations.map(loc => weatherService.refreshWeather(loc.locationId, units))
       );
       await fetchLocations();
+      toast.success('Weather data refreshed');
     } catch (error) {
       console.error('Failed to refresh all:', error);
+      toast.error('Failed to refresh all locations');
     } finally {
       setRefreshing(false);
     }
@@ -78,14 +84,17 @@ function App() {
   const handleLocationAdded = () => {
     fetchLocations();
     setIsAddModalOpen(false);
+    toast.success('Location added');
   };
 
   const handleLocationDeleted = async (id) => {
     try {
       await weatherService.deleteLocation(id);
       await fetchLocations();
+      toast.success('Location deleted');
     } catch (error) {
       console.error('Failed to delete location:', error);
+      toast.error('Failed to delete location');
     }
   };
 
@@ -93,8 +102,10 @@ function App() {
     try {
       await weatherService.updateLocation(id, { isFavorite: !currentStatus });
       await fetchLocations();
+      toast.success(!currentStatus ? 'Added to favorites' : 'Removed from favorites');
     } catch (error) {
       console.error('Failed to update favorite status:', error);
+      toast.error('Failed to update favorite status');
     }
   };
 

@@ -110,6 +110,7 @@ const WeatherCard = ({
             <button
               onClick={handleToggleFavorite}
               className="rounded-lg p-1.5 transition hover:bg-white/20"
+              aria-label={location.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
               title={location.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               <FiHeart className={`h-5 w-5 ${location.isFavorite ? 'fill-current' : ''}`} />
@@ -117,6 +118,7 @@ const WeatherCard = ({
             <button
               onClick={handleDelete}
               className="rounded-lg p-1.5 transition hover:bg-white/20"
+              aria-label="Delete location"
               title="Delete location"
             >
               <FiTrash2 className="h-5 w-5" />

@@ -374,6 +374,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
             </p>
           </div>
           <button onClick={closeModal} className="rounded-full p-2 transition-colors hover:bg-slate-200">
+            <span className="sr-only">Close add location modal</span>
             <FiX className="h-5 w-5 text-slate-500" />
           </button>
         </div>
@@ -431,6 +432,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                 <button
                   onClick={handleSearch}
                   disabled={loading || !cityName.trim()}
+                  aria-label="Search locations"
                   className="inline-flex items-center rounded-xl bg-sky-600 px-4 py-2.5 font-semibold text-white transition hover:bg-sky-700 disabled:opacity-50"
                 >
                   <FiSearch className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />

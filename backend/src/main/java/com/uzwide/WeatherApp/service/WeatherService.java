@@ -3,7 +3,6 @@ package com.uzwide.WeatherApp.service;
 
 import com.uzwide.WeatherApp.dto.request.LocationDTO;
 import com.uzwide.WeatherApp.dto.request.Units;
-import com.uzwide.WeatherApp.dto.response.WeatherApiResponseDTO;
 import com.uzwide.WeatherApp.dto.response.WeatherResponseDTO;
 import com.uzwide.WeatherApp.exception.DuplicateLocationException;
 import com.uzwide.WeatherApp.exception.LocationNotFoundException;
@@ -23,7 +22,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +31,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class WeatherService {
+    private static final double SIGNIFICANT_TEMP_DELTA = 8.0;
+    private static final int SIGNIFICANT_HUMIDITY_DELTA = 30;
+    private static final int SIGNIFICANT_PRESSURE_DELTA = 20;
+
     private final LocationRepository locationRepository;
     private final WeatherSnapshotRepository weatherSnapshotRepository;
     private final RestTemplate restTemplate;
@@ -152,7 +154,19 @@ public class WeatherService {
 
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
+            Optional<WeatherSnapshot> latestSnapshot = weatherSnapshotRepository
+                    .findFirstByLocationOrderByFetchedAtDesc(location);
             WeatherSnapshot weatherSnapshot = mapToWeatherSnapshot(response, location);
+
+            latestSnapshot.ifPresent(previous -> {
+                if (isSignificantWeatherDrift(previous, weatherSnapshot)) {
+                    log.warn(
+                            "Significant weather drift detected for {}. Keeping historical data and appending latest snapshot.",
+                            location.getName()
+                    );
+                }
+            });
+
             weatherSnapshotRepository.save(weatherSnapshot);
             return weatherSnapshot;
 
@@ -208,6 +222,18 @@ public class WeatherService {
         weatherSnapshot.setVisibility(response.containsKey("visibility") ? ((Number) response.get("visibility")).intValue() : 10000);
         
         return weatherSnapshot;
+    }
+
+    private boolean isSignificantWeatherDrift(WeatherSnapshot previous, WeatherSnapshot current) {
+        if (previous.getTemperature() == null || current.getTemperature() == null
+                || previous.getHumidity() == null || current.getHumidity() == null
+                || previous.getPressure() == null || current.getPressure() == null) {
+            return false;
+        }
+
+        return Math.abs(previous.getTemperature() - current.getTemperature()) >= SIGNIFICANT_TEMP_DELTA
+                || Math.abs(previous.getHumidity() - current.getHumidity()) >= SIGNIFICANT_HUMIDITY_DELTA
+                || Math.abs(previous.getPressure() - current.getPressure()) >= SIGNIFICANT_PRESSURE_DELTA;
     }
 
     private WeatherResponseDTO mapToResponseDTO(Location location, WeatherSnapshot weatherSnapshot) {
