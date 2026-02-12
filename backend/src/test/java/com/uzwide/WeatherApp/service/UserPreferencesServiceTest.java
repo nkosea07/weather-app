@@ -14,9 +14,11 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,23 +49,16 @@ class UserPreferencesServiceTest {
     }
 
     @Test
-    void getUserPreferencesCreatesDefaultsWhenMissing() {
-        UserPreferences created = new UserPreferences();
-        created.setId(1L);
-        created.setDefaultUnits(Units.METRIC);
-        created.setRefreshIntervalMinutes(30);
-        created.setAutoRefreshEnabled(false);
-
+    void getUserPreferencesReturnsDefaultValuesWhenMissing() {
         when(userPreferencesRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
-        when(userPreferencesRepository.save(any(UserPreferences.class))).thenReturn(created);
 
         UserPreferencesDTO result = userPreferencesService.getUserPreferences();
 
-        assertEquals(1L, result.getId());
+        assertNull(result.getId());
         assertEquals(Units.METRIC, result.getDefaultUnits());
         assertEquals(30, result.getRefreshIntervalMinutes());
         assertFalse(result.getAutoRefreshEnabled());
-        verify(userPreferencesRepository).save(any(UserPreferences.class));
+        verify(userPreferencesRepository, never()).save(any(UserPreferences.class));
     }
 
     @Test

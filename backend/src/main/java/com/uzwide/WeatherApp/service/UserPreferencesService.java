@@ -11,8 +11,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -20,10 +18,10 @@ public class UserPreferencesService {
     private final UserPreferencesRepository userPreferencesRepository;
 
     @Cacheable(value = "userPreferences")
-    @Transactional
+    @Transactional(readOnly = true)
     public UserPreferencesDTO getUserPreferences() {
         UserPreferences preferences = userPreferencesRepository.findFirstByOrderByIdAsc()
-                .orElseGet(this::createDefaultPreferences);
+                .orElseGet(this::buildDefaultPreferences);
         return mapToDTO(preferences);
     }
 
@@ -31,7 +29,7 @@ public class UserPreferencesService {
     @CacheEvict(value = "userPreferences")
     public UserPreferencesDTO updateUserPreferences(UserPreferencesDTO dto) {
         UserPreferences preferences = userPreferencesRepository.findFirstByOrderByIdAsc()
-                .orElseGet(this::createDefaultPreferences);
+                .orElseGet(this::buildDefaultPreferences);
 
         if (dto.getDefaultUnits() != null) {
             preferences.setDefaultUnits(dto.getDefaultUnits());
@@ -47,12 +45,12 @@ public class UserPreferencesService {
         return mapToDTO(saved);
     }
 
-    private UserPreferences createDefaultPreferences() {
+    private UserPreferences buildDefaultPreferences() {
         UserPreferences preferences = new UserPreferences();
         preferences.setDefaultUnits(Units.METRIC);
         preferences.setRefreshIntervalMinutes(30);
         preferences.setAutoRefreshEnabled(false);
-        return userPreferencesRepository.save(preferences);
+        return preferences;
     }
 
     private UserPreferencesDTO mapToDTO(UserPreferences preferences) {

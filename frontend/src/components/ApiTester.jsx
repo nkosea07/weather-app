@@ -20,58 +20,164 @@ const ApiTester = () => {
 
   const [userPrefs, setUserPrefs] = useState({
     defaultUnits: 'METRIC',
-    refreshInterval: 30,
-    autoRefresh: true
+    refreshIntervalMinutes: 30,
+    autoRefreshEnabled: true
   });
 
   const [selectedUnits, setSelectedUnits] = useState('METRIC');
   const [locationId, setLocationId] = useState('1');
+  const apiKey = process.env.REACT_APP_WEATHER_API_KEY;
 
-  const baseUrl = 'http://localhost:8080/api';
+  const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+  const baseOrigin = (() => {
+    try {
+      return new URL(baseUrl).origin;
+    } catch (error) {
+      return 'http://localhost:8080';
+    }
+  })();
 
-  const makeRequest = async (endpoint, method = 'GET', body = null, tab = '') => {
-    const loadingKey = `${tab}-${endpoint}`;
+  const isAbsoluteUrl = (value) => /^https?:\/\//i.test(value);
+  const resolveUrl = (endpoint) => (isAbsoluteUrl(endpoint) ? endpoint : `${baseUrl}${endpoint}`);
+
+  const parseResponseBody = async (response) => {
+    if (response.status === 204) {
+      return { message: 'No content' };
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return response.json();
+    }
+
+    const text = await response.text();
+    return text ? { raw: text } : { message: 'Empty response body' };
+  };
+
+  const saveResponse = (loadingKey, status, statusText, data) => {
+    setResponses((prev) => ({
+      ...prev,
+      [loadingKey]: {
+        status,
+        statusText,
+        data,
+        timestamp: new Date().toLocaleTimeString()
+      }
+    }));
+  };
+
+  const makeRequest = async (endpoint, method = 'GET', body = null, tab = '', responseKey = null) => {
+    const loadingKey = responseKey || `${tab}-${endpoint}`;
     setLoading(prev => ({ ...prev, [loadingKey]: true }));
-    
+
     try {
       const options = {
         method,
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       };
 
       if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
         options.body = JSON.stringify(body);
       }
 
-      const response = await fetch(`${baseUrl}${endpoint}`, options);
-      const data = await response.json();
+      const response = await fetch(resolveUrl(endpoint), options);
+      const data = await parseResponseBody(response);
+      saveResponse(loadingKey, response.status, response.statusText, data);
 
-      setResponses(prev => ({
-        ...prev,
-        [loadingKey]: {
-          status: response.status,
-          statusText: response.statusText,
-          data,
-          timestamp: new Date().toLocaleTimeString()
-        }
-      }));
-
-      toast.success(`Request successful: ${response.status}`);
+      if (response.ok) {
+        toast.success(`Request successful: ${response.status}`);
+      } else {
+        toast.error(`Request failed: ${response.status}`);
+      }
     } catch (error) {
-      setResponses(prev => ({
-        ...prev,
-        [loadingKey]: {
-          status: 'ERROR',
-          statusText: error.message,
-          data: { error: error.message },
-          timestamp: new Date().toLocaleTimeString()
-        }
-      }));
+      saveResponse(loadingKey, 'ERROR', error.message, { error: error.message });
       toast.error('Request failed');
     } finally {
       setLoading(prev => ({ ...prev, [loadingKey]: false }));
+    }
+  };
+
+  const handleAddLocation = () => {
+    const latitude = Number.parseFloat(newLocation.latitude);
+    const longitude = Number.parseFloat(newLocation.longitude);
+    const name = newLocation.name.trim();
+    const countryRaw = newLocation.country.trim();
+    const country = countryRaw.length === 2 ? countryRaw.toUpperCase() : countryRaw;
+
+    if (!name) {
+      toast.error('Location name is required');
+      return;
+    }
+
+    if (!country) {
+      toast.error('Country is required');
+      return;
+    }
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      toast.error('Latitude and longitude must be valid numbers');
+      return;
+    }
+
+    makeRequest(
+      '/weather/locations',
+      'POST',
+      {
+        name,
+        country,
+        latitude,
+        longitude,
+        displayName: newLocation.displayName.trim() || null,
+        isFavorite: newLocation.isFavorite
+      },
+      'weather',
+      'weather-add-location'
+    );
+  };
+
+  const handleToggleFavorite = async () => {
+    const id = locationId.trim();
+    if (!id) {
+      toast.error('Location ID is required');
+      return;
+    }
+
+    const loadingKey = `weather-favorite-${id}`;
+    setLoading((prev) => ({ ...prev, [loadingKey]: true }));
+
+    try {
+      const currentResponse = await fetch(resolveUrl(`/weather/locations/${id}?units=${selectedUnits}`));
+      const currentData = await parseResponseBody(currentResponse);
+
+      if (!currentResponse.ok) {
+        saveResponse(loadingKey, currentResponse.status, currentResponse.statusText, currentData);
+        toast.error(`Failed to load location ${id}`);
+        return;
+      }
+
+      const nextFavoriteState = !Boolean(currentData?.isFavorite);
+      const updateResponse = await fetch(resolveUrl(`/weather/locations/${id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isFavorite: nextFavoriteState })
+      });
+      const updateData = await parseResponseBody(updateResponse);
+      saveResponse(loadingKey, updateResponse.status, updateResponse.statusText, updateData);
+
+      if (updateResponse.ok) {
+        toast.success(nextFavoriteState ? 'Marked as favorite' : 'Removed from favorites');
+      } else {
+        toast.error(`Failed to toggle favorite: ${updateResponse.status}`);
+      }
+    } catch (error) {
+      saveResponse(loadingKey, 'ERROR', error.message, { error: error.message });
+      toast.error('Favorite update failed');
+    } finally {
+      setLoading((prev) => ({ ...prev, [loadingKey]: false }));
     }
   };
 
@@ -80,6 +186,28 @@ const ApiTester = () => {
     setCopied(prev => ({ ...prev, [key]: true }));
     toast.success('Copied to clipboard');
     setTimeout(() => setCopied(prev => ({ ...prev, [key]: false })), 2000);
+  };
+
+  const renderResponse = (key, label) => {
+    if (!responses[key]) return null;
+    const response = responses[key];
+
+    return (
+      <div className="mt-2 p-3 bg-gray-100 rounded text-sm">
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-medium">
+            {label} ({response.status})
+          </span>
+          <button
+            onClick={() => copyToClipboard(response.data, key)}
+            className="text-blue-600 hover:text-blue-800"
+          >
+            {copied[key] ? <FiCheck /> : <FiCopy />}
+          </button>
+        </div>
+        <pre className="text-xs overflow-auto max-h-96">{JSON.stringify(response.data, null, 2)}</pre>
+      </div>
+    );
   };
 
   const tabs = [
@@ -111,29 +239,14 @@ const ApiTester = () => {
                 <option value="STANDARD">Standard</option>
               </select>
               <button
-                onClick={() => makeRequest(`/weather/locations?units=${selectedUnits}`, 'GET', null, 'weather')}
-                disabled={loading['weather-/weather/locations']}
+                onClick={() => makeRequest(`/weather/locations?units=${selectedUnits}`, 'GET', null, 'weather', 'weather-locations')}
+                disabled={loading['weather-locations']}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
               >
-                {loading['weather-/weather/locations'] ? <FiRefreshCw className="animate-spin" /> : <FiSend />}
+                {loading['weather-locations'] ? <FiRefreshCw className="animate-spin" /> : <FiSend />}
               </button>
             </div>
-            {responses['weather-/weather/locations'] && (
-              <div className="mt-2 p-3 bg-gray-100 rounded text-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Response ({responses['weather-/weather/locations'].status})</span>
-                  <button
-                    onClick={() => copyToClipboard(responses['weather-/weather/locations'].data, 'weather-locations')}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {copied['weather-locations'] ? <FiCheck /> : <FiCopy />}
-                  </button>
-                </div>
-                <pre className="text-xs overflow-auto max-h-40">
-                  {JSON.stringify(responses['weather-/weather/locations'].data, null, 2)}
-                </pre>
-              </div>
-            )}
+            {renderResponse('weather-locations', 'Response')}
           </div>
 
           <div>
@@ -147,29 +260,14 @@ const ApiTester = () => {
                 className="px-3 py-2 border rounded-md flex-1"
               />
               <button
-                onClick={() => makeRequest(`/weather/locations/${locationId}?units=${selectedUnits}`, 'GET', null, 'weather')}
-                disabled={loading[`weather-/weather/locations/${locationId}`]}
+                onClick={() => makeRequest(`/weather/locations/${locationId}?units=${selectedUnits}`, 'GET', null, 'weather', `weather-location-${locationId}`)}
+                disabled={loading[`weather-location-${locationId}`]}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
               >
-                {loading[`weather-/weather/locations/${locationId}`] ? <FiRefreshCw className="animate-spin" /> : <FiSend />}
+                {loading[`weather-location-${locationId}`] ? <FiRefreshCw className="animate-spin" /> : <FiSend />}
               </button>
             </div>
-            {responses[`weather-/weather/locations/${locationId}`] && (
-              <div className="mt-2 p-3 bg-gray-100 rounded text-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Response ({responses[`weather-/weather/locations/${locationId}`].status})</span>
-                  <button
-                    onClick={() => copyToClipboard(responses[`weather-/weather/locations/${locationId}`].data, `weather-location-${locationId}`)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {copied[`weather-location-${locationId}`] ? <FiCheck /> : <FiCopy />}
-                  </button>
-                </div>
-                <pre className="text-xs overflow-auto max-h-40">
-                  {JSON.stringify(responses[`weather-/weather/locations/${locationId}`].data, null, 2)}
-                </pre>
-              </div>
-            )}
+            {renderResponse(`weather-location-${locationId}`, 'Response')}
           </div>
         </div>
       </div>
@@ -186,7 +284,7 @@ const ApiTester = () => {
           />
           <input
             type="text"
-            placeholder="Country"
+            placeholder="Country (2-letter code)"
             value={newLocation.country}
             onChange={(e) => setNewLocation({...newLocation, country: e.target.value})}
             className="px-3 py-2 border rounded-md"
@@ -223,59 +321,47 @@ const ApiTester = () => {
           </label>
         </div>
         <button
-          onClick={() => makeRequest('/weather/locations', 'POST', newLocation, 'weather')}
-          disabled={loading['weather-/weather/locations-post']}
+          onClick={handleAddLocation}
+          disabled={loading['weather-add-location']}
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
         >
-          {loading['weather-/weather/locations-post'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiPlus className="mr-2" />}
+          {loading['weather-add-location'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiPlus className="mr-2" />}
           Add Location
         </button>
-        {responses['weather-/weather/locations-post'] && (
-          <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium">Response ({responses['weather-/weather/locations-post'].status})</span>
-              <button
-                onClick={() => copyToClipboard(responses['weather-/weather/locations-post'].data, 'weather-add-location')}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                {copied['weather-add-location'] ? <FiCheck /> : <FiCopy />}
-              </button>
-            </div>
-            <pre className="text-xs overflow-auto max-h-40">
-              {JSON.stringify(responses['weather-/weather/locations-post'].data, null, 2)}
-            </pre>
-          </div>
-        )}
+        {renderResponse('weather-add-location', 'Response')}
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold mb-4">Location Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            onClick={() => makeRequest(`/weather/locations/${locationId}/refresh?units=${selectedUnits}`, 'POST', null, 'weather')}
-            disabled={loading[`weather-/weather/locations/${locationId}/refresh`]}
+            onClick={() => makeRequest(`/weather/locations/${locationId}/refresh?units=${selectedUnits}`, 'POST', null, 'weather', `weather-refresh-${locationId}`)}
+            disabled={loading[`weather-refresh-${locationId}`]}
             className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 flex items-center justify-center"
           >
-            {loading[`weather-/weather/locations/${locationId}/refresh`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiRefreshCw className="mr-2" />}
+            {loading[`weather-refresh-${locationId}`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiRefreshCw className="mr-2" />}
             Refresh Weather
           </button>
           <button
-            onClick={() => makeRequest(`/weather/locations/${locationId}/favorite`, 'PATCH', null, 'weather')}
-            disabled={loading[`weather-/weather/locations/${locationId}/favorite`]}
+            onClick={handleToggleFavorite}
+            disabled={loading[`weather-favorite-${locationId}`]}
             className="px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50 flex items-center justify-center"
           >
-            {loading[`weather-/weather/locations/${locationId}/favorite`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiHeart className="mr-2" />}
+            {loading[`weather-favorite-${locationId}`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiHeart className="mr-2" />}
             Toggle Favorite
           </button>
           <button
-            onClick={() => makeRequest(`/weather/locations/${locationId}`, 'DELETE', null, 'weather')}
-            disabled={loading[`weather-/weather/locations/${locationId}/delete`]}
+            onClick={() => makeRequest(`/weather/locations/${locationId}`, 'DELETE', null, 'weather', `weather-delete-${locationId}`)}
+            disabled={loading[`weather-delete-${locationId}`]}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center justify-center"
           >
-            {loading[`weather-/weather/locations/${locationId}/delete`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiTrash2 className="mr-2" />}
+            {loading[`weather-delete-${locationId}`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiTrash2 className="mr-2" />}
             Delete Location
           </button>
         </div>
+        {renderResponse(`weather-refresh-${locationId}`, 'Refresh response')}
+        {renderResponse(`weather-favorite-${locationId}`, 'Favorite response')}
+        {renderResponse(`weather-delete-${locationId}`, 'Delete response')}
       </div>
     </div>
   );
@@ -309,30 +395,15 @@ const ApiTester = () => {
             </select>
           </div>
           <button
-            onClick={() => makeRequest(`/forecast/locations/${locationId}?units=${selectedUnits}`, 'GET', null, 'forecast')}
-            disabled={loading[`forecast-/forecast/locations/${locationId}`]}
+            onClick={() => makeRequest(`/forecast/${locationId}?units=${selectedUnits}`, 'GET', null, 'forecast', `forecast-${locationId}`)}
+            disabled={loading[`forecast-${locationId}`]}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
           >
-            {loading[`forecast-/forecast/locations/${locationId}`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSend className="mr-2" />}
+            {loading[`forecast-${locationId}`] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSend className="mr-2" />}
             Get Forecast
           </button>
         </div>
-        {responses[`forecast-/forecast/locations/${locationId}`] && (
-          <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium">Response ({responses[`forecast-/forecast/locations/${locationId}`].status})</span>
-              <button
-                onClick={() => copyToClipboard(responses[`forecast-/forecast/locations/${locationId}`].data, `forecast-${locationId}`)}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                {copied[`forecast-${locationId}`] ? <FiCheck /> : <FiCopy />}
-              </button>
-            </div>
-            <pre className="text-xs overflow-auto max-h-96">
-              {JSON.stringify(responses[`forecast-/forecast/locations/${locationId}`].data, null, 2)}
-            </pre>
-          </div>
-        )}
+        {renderResponse(`forecast-${locationId}`, 'Response')}
       </div>
     </div>
   );
@@ -348,29 +419,14 @@ const ApiTester = () => {
           <div>
             <h4 className="font-medium mb-3">Current Preferences</h4>
             <button
-              onClick={() => makeRequest('/user/preferences', 'GET', null, 'preferences')}
-              disabled={loading['preferences-/user/preferences']}
+              onClick={() => makeRequest('/preferences', 'GET', null, 'preferences', 'preferences-get')}
+              disabled={loading['preferences-get']}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center mb-4"
             >
-              {loading['preferences-/user/preferences'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSend className="mr-2" />}
+              {loading['preferences-get'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSend className="mr-2" />}
               Get Preferences
             </button>
-            {responses['preferences-/user/preferences'] && (
-              <div className="p-3 bg-gray-100 rounded text-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Response ({responses['preferences-/user/preferences'].status})</span>
-                  <button
-                    onClick={() => copyToClipboard(responses['preferences-/user/preferences'].data, 'preferences-get')}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {copied['preferences-get'] ? <FiCheck /> : <FiCopy />}
-                  </button>
-                </div>
-                <pre className="text-xs overflow-auto max-h-40">
-                  {JSON.stringify(responses['preferences-/user/preferences'].data, null, 2)}
-                </pre>
-              </div>
-            )}
+            {renderResponse('preferences-get', 'Response')}
           </div>
 
           <div>
@@ -392,8 +448,13 @@ const ApiTester = () => {
                 <label className="block text-sm font-medium mb-1">Refresh Interval (minutes)</label>
                 <input
                   type="number"
-                  value={userPrefs.refreshInterval}
-                  onChange={(e) => setUserPrefs({...userPrefs, refreshInterval: parseInt(e.target.value)})}
+                  value={userPrefs.refreshIntervalMinutes}
+                  onChange={(e) =>
+                    setUserPrefs({
+                      ...userPrefs,
+                      refreshIntervalMinutes: Number.parseInt(e.target.value, 10) || 1
+                    })
+                  }
                   className="w-full px-3 py-2 border rounded-md"
                   min="1"
                   max="1440"
@@ -402,37 +463,22 @@ const ApiTester = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={userPrefs.autoRefresh}
-                  onChange={(e) => setUserPrefs({...userPrefs, autoRefresh: e.target.checked})}
+                  checked={userPrefs.autoRefreshEnabled}
+                  onChange={(e) => setUserPrefs({...userPrefs, autoRefreshEnabled: e.target.checked})}
                   className="mr-2"
                 />
                 Auto Refresh
               </label>
             </div>
             <button
-              onClick={() => makeRequest('/user/preferences', 'PUT', userPrefs, 'preferences')}
-              disabled={loading['preferences-/user/preferences-put']}
+              onClick={() => makeRequest('/preferences', 'PUT', userPrefs, 'preferences', 'preferences-put')}
+              disabled={loading['preferences-put']}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
             >
-              {loading['preferences-/user/preferences-put'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSettings className="mr-2" />}
+              {loading['preferences-put'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSettings className="mr-2" />}
               Update Preferences
             </button>
-            {responses['preferences-/user/preferences-put'] && (
-              <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Response ({responses['preferences-/user/preferences-put'].status})</span>
-                  <button
-                    onClick={() => copyToClipboard(responses['preferences-/user/preferences-put'].data, 'preferences-put')}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {copied['preferences-put'] ? <FiCheck /> : <FiCopy />}
-                  </button>
-                </div>
-                <pre className="text-xs overflow-auto max-h-40">
-                  {JSON.stringify(responses['preferences-/user/preferences-put'].data, null, 2)}
-                </pre>
-              </div>
-            )}
+            {renderResponse('preferences-put', 'Response')}
           </div>
         </div>
       </div>
@@ -446,24 +492,59 @@ const ApiTester = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            onClick={() => makeRequest(`http://api.openweathermap.org/geo/1.0/direct?q=London&limit=5&appid=d12efcda9379853b2a8618285c813282`, 'GET', null, 'external')}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            onClick={() =>
+              makeRequest(
+                `https://api.openweathermap.org/geo/1.0/direct?q=London&limit=5&appid=${apiKey}`,
+                'GET',
+                null,
+                'external',
+                'external-geocoding'
+              )
+            }
+            disabled={!apiKey}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
           >
             Geocoding API
           </button>
           <button
-            onClick={() => makeRequest(`https://api.openweathermap.org/data/2.5/weather?lat=51.5074&lon=-0.1278&appid=d12efcda9379853b2a8618285c813282&units=metric`, 'GET', null, 'external')}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            onClick={() =>
+              makeRequest(
+                `https://api.openweathermap.org/data/2.5/weather?lat=51.5074&lon=-0.1278&appid=${apiKey}&units=metric`,
+                'GET',
+                null,
+                'external',
+                'external-current'
+              )
+            }
+            disabled={!apiKey}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
           >
             Current Weather
           </button>
           <button
-            onClick={() => makeRequest(`https://api.openweathermap.org/data/2.5/forecast?lat=51.5074&lon=-0.1278&appid=d12efcda9379853b2a8618285c813282&units=metric`, 'GET', null, 'external')}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            onClick={() =>
+              makeRequest(
+                `https://api.openweathermap.org/data/2.5/forecast?lat=51.5074&lon=-0.1278&appid=${apiKey}&units=metric`,
+                'GET',
+                null,
+                'external',
+                'external-forecast'
+              )
+            }
+            disabled={!apiKey}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
           >
             Forecast API
           </button>
         </div>
+        {!apiKey && (
+          <p className="mt-3 text-sm text-red-600">
+            Set <code>REACT_APP_WEATHER_API_KEY</code> to test direct OpenWeatherMap APIs.
+          </p>
+        )}
+        {renderResponse('external-geocoding', 'Geocoding response')}
+        {renderResponse('external-current', 'Current weather response')}
+        {renderResponse('external-forecast', 'Forecast response')}
       </div>
     </div>
   );
@@ -477,59 +558,24 @@ const ApiTester = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
-            onClick={() => makeRequest('http://localhost:8080/actuator/health', 'GET', null, 'health')}
-            disabled={loading['health-/actuator/health']}
+            onClick={() => makeRequest(`${baseOrigin}/actuator/health`, 'GET', null, 'health', 'health-check')}
+            disabled={loading['health-check']}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
           >
-            {loading['health-/actuator/health'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiHeart className="mr-2" />}
+            {loading['health-check'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiHeart className="mr-2" />}
             Health Check
           </button>
           <button
-            onClick={() => makeRequest('http://localhost:8080/actuator/info', 'GET', null, 'health')}
-            disabled={loading['health-/actuator/info']}
+            onClick={() => makeRequest(`${baseOrigin}/actuator/info`, 'GET', null, 'health', 'app-info')}
+            disabled={loading['app-info']}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
           >
-            {loading['health-/actuator/info'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSettings className="mr-2" />}
+            {loading['app-info'] ? <FiRefreshCw className="animate-spin mr-2" /> : <FiSettings className="mr-2" />}
             App Info
           </button>
         </div>
-        
-        {(responses['health-/actuator/health'] || responses['health-/actuator/info']) && (
-          <div className="mt-4 space-y-4">
-            {responses['health-/actuator/health'] && (
-              <div className="p-3 bg-gray-100 rounded text-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Health Check ({responses['health-/actuator/health'].status})</span>
-                  <button
-                    onClick={() => copyToClipboard(responses['health-/actuator/health'].data, 'health-check')}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {copied['health-check'] ? <FiCheck /> : <FiCopy />}
-                  </button>
-                </div>
-                <pre className="text-xs overflow-auto max-h-40">
-                  {JSON.stringify(responses['health-/actuator/health'].data, null, 2)}
-                </pre>
-              </div>
-            )}
-            {responses['health-/actuator/info'] && (
-              <div className="p-3 bg-gray-100 rounded text-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">App Info ({responses['health-/actuator/info'].status})</span>
-                  <button
-                    onClick={() => copyToClipboard(responses['health-/actuator/info'].data, 'app-info')}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {copied['app-info'] ? <FiCheck /> : <FiCopy />}
-                  </button>
-                </div>
-                <pre className="text-xs overflow-auto max-h-40">
-                  {JSON.stringify(responses['health-/actuator/info'].data, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        )}
+        {renderResponse('health-check', 'Health Check')}
+        {renderResponse('app-info', 'App Info')}
       </div>
     </div>
   );
