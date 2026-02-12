@@ -62,6 +62,7 @@ const ForecastModal = ({ isOpen, onClose, location, units }) => {
           <button
             onClick={onClose}
             className="rounded-full p-2 transition-colors hover:bg-slate-200"
+            aria-label="Close forecast modal"
           >
             <FiX className="h-5 w-5 text-slate-500" />
           </button>
