@@ -65,14 +65,16 @@ const ApiDocumentation = () => {
           example: 'POST /api/weather/locations/1/refresh?units=METRIC'
         },
         {
-          method: 'PATCH',
-          path: '/api/weather/locations/{id}/favorite',
-          description: 'Toggle favorite status of a location',
+          method: 'PUT',
+          path: '/api/weather/locations/{id}',
+          description: 'Update mutable location attributes',
           parameters: [
-            { name: 'id', type: 'path', required: true, description: 'Location ID' }
+            { name: 'id', type: 'path', required: true, description: 'Location ID' },
+            { name: 'displayName', type: 'body', required: false, description: 'Custom display name' },
+            { name: 'isFavorite', type: 'body', required: false, description: 'Favorite flag' }
           ],
-          response: 'Updated WeatherResponseDTO object',
-          example: 'PATCH /api/weather/locations/1/favorite'
+          response: 'Updated Location object',
+          example: 'PUT /api/weather/locations/1\nBody: {"isFavorite":true}'
         },
         {
           method: 'DELETE',
@@ -92,14 +94,14 @@ const ApiDocumentation = () => {
       endpoints: [
         {
           method: 'GET',
-          path: '/api/forecast/locations/{id}',
+          path: '/api/forecast/{locationId}',
           description: 'Get 5-day forecast for a specific location',
           parameters: [
-            { name: 'id', type: 'path', required: true, description: 'Location ID' },
+            { name: 'locationId', type: 'path', required: true, description: 'Location ID' },
             { name: 'units', type: 'query', required: false, description: 'Units: METRIC, IMPERIAL, STANDARD', default: 'METRIC' }
           ],
-          response: 'Array of ForecastDTO objects grouped by date',
-          example: 'GET /api/forecast/locations/1?units=METRIC'
+          response: 'List of ForecastDTO objects',
+          example: 'GET /api/forecast/1?units=METRIC'
         }
       ]
     },
@@ -109,23 +111,23 @@ const ApiDocumentation = () => {
       endpoints: [
         {
           method: 'GET',
-          path: '/api/user/preferences',
+          path: '/api/preferences',
           description: 'Get current user preferences',
           parameters: [],
           response: 'UserPreferencesDTO object',
-          example: 'GET /api/user/preferences'
+          example: 'GET /api/preferences'
         },
         {
           method: 'PUT',
-          path: '/api/user/preferences',
+          path: '/api/preferences',
           description: 'Update user preferences',
           parameters: [
             { name: 'defaultUnits', type: 'body', required: false, description: 'Default units system', default: 'METRIC' },
-            { name: 'refreshInterval', type: 'body', required: false, description: 'Auto-refresh interval in minutes', default: '30' },
-            { name: 'autoRefresh', type: 'body', required: false, description: 'Enable auto-refresh', default: 'true' }
+            { name: 'refreshIntervalMinutes', type: 'body', required: false, description: 'Auto-refresh interval in minutes', default: '30' },
+            { name: 'autoRefreshEnabled', type: 'body', required: false, description: 'Enable auto-refresh', default: 'true' }
           ],
           response: 'Updated UserPreferencesDTO object',
-          example: 'PUT /api/user/preferences\nBody: {"defaultUnits":"METRIC","refreshInterval":30,"autoRefresh":true}'
+          example: 'PUT /api/preferences\nBody: {"defaultUnits":"METRIC","refreshIntervalMinutes":30,"autoRefreshEnabled":true}'
         }
       ]
     },
@@ -159,24 +161,19 @@ const ApiDocumentation = () => {
       description: 'Complete weather data for a location',
       fields: [
         { name: 'locationId', type: 'Long', description: 'Location identifier' },
-        { name: 'name', type: 'String', description: 'Location name' },
+        { name: 'locationName', type: 'String', description: 'Location name' },
         { name: 'country', type: 'String', description: 'Country code' },
         { name: 'displayName', type: 'String', description: 'Display name' },
-        { name: 'latitude', type: 'Double', description: 'Latitude coordinate' },
-        { name: 'longitude', type: 'Double', description: 'Longitude coordinate' },
         { name: 'isFavorite', type: 'Boolean', description: 'Favorite status' },
         { name: 'temperature', type: 'Double', description: 'Current temperature' },
         { name: 'feelsLike', type: 'Double', description: 'Feels like temperature' },
         { name: 'humidity', type: 'Integer', description: 'Humidity percentage' },
         { name: 'pressure', type: 'Integer', description: 'Atmospheric pressure' },
         { name: 'windSpeed', type: 'Double', description: 'Wind speed' },
-        { name: 'windDirection', type: 'Integer', description: 'Wind direction in degrees' },
         { name: 'weatherCondition', type: 'String', description: 'Weather condition' },
         { name: 'weatherDescription', type: 'String', description: 'Weather description' },
         { name: 'weatherIcon', type: 'String', description: 'Weather icon code' },
-        { name: 'cloudiness', type: 'Integer', description: 'Cloudiness percentage' },
-        { name: 'visibility', type: 'Integer', description: 'Visibility in meters' },
-        { name: 'fetchedAt', type: 'String', description: 'Data fetch timestamp' }
+        { name: 'lastUpdated', type: 'String', description: 'Data fetch timestamp' }
       ]
     },
     {
@@ -194,7 +191,8 @@ const ApiDocumentation = () => {
         { name: 'weatherDescription', type: 'String', description: 'Weather description' },
         { name: 'weatherIcon', type: 'String', description: 'Weather icon code' },
         { name: 'cloudiness', type: 'Integer', description: 'Cloudiness percentage' },
-        { name: 'precipitationProbability', type: 'Double', description: 'Precipitation probability' }
+        { name: 'precipitationProbability', type: 'Double', description: 'Precipitation probability' },
+        { name: 'rainVolume', type: 'Double', description: 'Forecast rain volume' }
       ]
     },
     {
@@ -202,8 +200,8 @@ const ApiDocumentation = () => {
       description: 'User preferences configuration',
       fields: [
         { name: 'defaultUnits', type: 'String', description: 'Default units system (METRIC, IMPERIAL, STANDARD)' },
-        { name: 'refreshInterval', type: 'Integer', description: 'Auto-refresh interval in minutes' },
-        { name: 'autoRefresh', type: 'Boolean', description: 'Enable auto-refresh' },
+        { name: 'refreshIntervalMinutes', type: 'Integer', description: 'Auto-refresh interval in minutes' },
+        { name: 'autoRefreshEnabled', type: 'Boolean', description: 'Enable auto-refresh' },
         { name: 'createdAt', type: 'String', description: 'Creation timestamp' },
         { name: 'updatedAt', type: 'String', description: 'Last update timestamp' }
       ]

@@ -150,14 +150,14 @@ function App() {
             <div className="p-6 sm:p-8">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <div className="inline-flex items-center rounded-full bg-amber-300/15 px-3 py-1 text-xs font-semibold tracking-wide text-amber-200">
+                  <div className="inline-flex items-center rounded-full bg-amber-300/15 px-3 py-1 text-xs font-semibold tracking-wide text-amber-100">
                     <FiSun className="mr-2 h-4 w-4" />
                     Live weather operations
                   </div>
                   <h1 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
                     Forecast control center
                   </h1>
-                  <p className="mt-2 max-w-xl text-sm text-slate-200 sm:text-base">
+                  <p className="mt-2 max-w-xl text-sm text-slate-100 sm:text-base">
                     Track every city, refresh with one click, and keep top priorities pinned.
                   </p>
                 </div>
@@ -177,21 +177,21 @@ function App() {
 
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-white/15 bg-white/10 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-300">Tracked</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-100">Tracked</p>
                   <p className="mt-1 flex items-center text-2xl font-bold text-white">
                     <FiMapPin className="mr-2 h-5 w-5 text-cyan-300" />
                     {locations.length}
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/15 bg-white/10 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-300">Favorites</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-100">Favorites</p>
                   <p className="mt-1 flex items-center text-2xl font-bold text-white">
                     <FiStar className="mr-2 h-5 w-5 text-amber-300" />
                     {favoriteCount}
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/15 bg-white/10 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-300">Units</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-100">Units</p>
                   <p className="mt-1 text-2xl font-bold text-white">{units}</p>
                 </div>
               </div>
@@ -242,7 +242,7 @@ function App() {
         <div className="mt-8">
           <div className="glass-panel p-6 sm:p-8">
             <h2 className="text-2xl font-bold text-white">Settings</h2>
-            <p className="mt-2 text-slate-200">
+            <p className="mt-2 text-slate-100">
               Application settings and configuration are coming soon.
             </p>
           </div>

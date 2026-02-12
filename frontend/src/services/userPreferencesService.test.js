@@ -30,7 +30,7 @@ describe('userPreferencesService', () => {
   });
 
   test('updateUserPreferences sends payload to API', async () => {
-    const payload = { defaultUnits: 'IMPERIAL', autoRefresh: true };
+    const payload = { defaultUnits: 'IMPERIAL', autoRefreshEnabled: true };
     mockApi.put.mockResolvedValue({ data: payload });
 
     const result = await userPreferencesService.updateUserPreferences(payload);
