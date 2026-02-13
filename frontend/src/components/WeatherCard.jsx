@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiHeart, FiTrash2, FiRefreshCw, FiMapPin, FiDroplet, FiWind, FiEye, FiBarChart2, FiThermometer } from 'react-icons/fi';
+import { FiHeart, FiTrash2, FiRefreshCw, FiMapPin, FiDroplet, FiWind, FiEye, FiBarChart2, FiThermometer, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 import { format } from 'date-fns';
 import weatherService from '../services/weatherService';
 
@@ -13,6 +13,8 @@ const WeatherCard = ({
 }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -54,6 +56,34 @@ const WeatherCard = ({
 
   const handleShowForecast = () => {
     if (onShowForecast) onShowForecast(location);
+  };
+
+  const startEditing = () => {
+    setEditName(location.displayName || location.locationName);
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setEditName('');
+  };
+
+  const handleSaveDisplayName = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed) return;
+    try {
+      await weatherService.updateLocation(location.locationId, { displayName: trimmed });
+      setEditing(false);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setError('Failed to update display name');
+      console.error('Display name update error:', err);
+    }
+  };
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === 'Enter') handleSaveDisplayName();
+    if (e.key === 'Escape') cancelEditing();
   };
 
   const getWeatherBackground = (condition) => {
@@ -102,8 +132,32 @@ const WeatherCard = ({
     <article className="overflow-hidden rounded-2xl border border-white/20 bg-white/95 shadow-soft transition duration-200 hover:-translate-y-1 hover:shadow-lift">
       <div className={`bg-gradient-to-r ${getWeatherBackground(location.weatherCondition)} p-4 text-white`}>
         <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-bold">{location.displayName || location.locationName}</h3>
+          <div className="min-w-0 flex-1">
+            {editing ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={handleEditKeyDown}
+                  autoFocus
+                  className="w-full rounded-md bg-white/20 px-2 py-0.5 text-lg font-bold text-white placeholder-white/60 outline-none focus:bg-white/30"
+                />
+                <button onClick={handleSaveDisplayName} className="rounded-lg p-1 transition hover:bg-white/20" title="Save">
+                  <FiCheck className="h-4 w-4" />
+                </button>
+                <button onClick={cancelEditing} className="rounded-lg p-1 transition hover:bg-white/20" title="Cancel">
+                  <FiX className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <h3 className="truncate text-lg font-bold">{location.displayName || location.locationName}</h3>
+                <button onClick={startEditing} className="rounded-lg p-1 transition hover:bg-white/20" title="Edit display name">
+                  <FiEdit2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
             <p className="text-sm opacity-90">{location.country}</p>
           </div>
           <div className="flex space-x-2">
