@@ -114,7 +114,7 @@ const DashboardOverview = ({
       case 'good': return 'text-green-600 bg-green-100';
       case 'warning': return 'text-yellow-600 bg-yellow-100';
       case 'error': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-800 bg-gray-100';
     }
   };
 
@@ -138,7 +138,7 @@ const DashboardOverview = ({
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-white">Dashboard Overview</h1>
-          <p className="text-slate-200">System status and performance metrics</p>
+          <p className="text-slate-100">System status and performance metrics</p>
         </div>
         <button
           onClick={handleRefresh}
@@ -158,7 +158,7 @@ const DashboardOverview = ({
             <div key={index} className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                  <p className="text-sm font-medium text-gray-800">{stat.title}</p>
                   <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
                   <div className="flex items-center mt-2">
                     <span className="text-sm text-slate-600">{stat.subtitle}</span>
@@ -187,7 +187,7 @@ const DashboardOverview = ({
               </div>
               <span className={`font-medium ${systemHealth === 'UP' ? 'text-green-600' : 'text-yellow-700'}`}>{systemHealth}</span>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-800">
               <p>Last sync: {effectiveLastSync ? new Date(effectiveLastSync).toLocaleString() : 'Never'}</p>
             </div>
           </div>
@@ -202,7 +202,7 @@ const DashboardOverview = ({
               <div key={index} className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-700">{metric.name}</p>
-                  <p className="text-xs text-gray-500">Threshold: {metric.threshold}</p>
+                  <p className="text-xs text-gray-700">Threshold: {metric.threshold}</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium">{metric.value}</span>
@@ -222,7 +222,7 @@ const DashboardOverview = ({
           <FiActivity className="mr-2" /> Recent Activity
         </h2>
         {recentActivity.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+          <div className="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-700">
             No sync activity yet for this session.
           </div>
         ) : (
@@ -230,11 +230,11 @@ const DashboardOverview = ({
             {recentActivity.map((activity, index) => (
               <div key={index} className="flex items-center space-x-3 rounded-lg p-3 hover:bg-gray-50">
                 <div className="flex-shrink-0">
-                  <FiActivity className="h-5 w-5 text-gray-400" />
+                  <FiActivity className="h-5 w-5 text-gray-800" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-700">{activity.message}</p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
+                  <p className="text-xs text-gray-700">{activity.time}</p>
                 </div>
               </div>
             ))}

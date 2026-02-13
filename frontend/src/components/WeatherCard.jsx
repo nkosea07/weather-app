@@ -114,7 +114,7 @@ const WeatherCard = ({
         <div className="text-center text-slate-200">
           <FiMapPin className="mx-auto mb-3 h-12 w-12 text-cyan-200/80" />
           <p className="font-semibold">{location.displayName || location.locationName}</p>
-          <p className="mt-1 text-sm text-slate-300">No weather data available</p>
+          <p className="mt-1 text-sm text-slate-100">No weather data available</p>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -201,13 +201,13 @@ const WeatherCard = ({
               <div className="text-3xl font-bold text-gray-800">
                 {weatherService.formatTemperature(location.temperature, units)}
               </div>
-              <div className="text-sm font-medium capitalize text-gray-600">
+              <div className="text-sm font-medium capitalize text-gray-800">
                 {location.weatherDescription}
               </div>
             </div>
           </div>
           <div className="text-right min-w-[104px]">
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-700">
               {location.lastUpdated && format(new Date(location.lastUpdated), 'MMM d, h:mm a')}
             </div>
             <button
@@ -241,7 +241,7 @@ const WeatherCard = ({
         </div>
 
         {location.feelsLike !== null && location.feelsLike !== undefined && (
-          <div className="mt-3 flex items-center border-t border-gray-200 pt-3 text-sm text-gray-600">
+          <div className="mt-3 flex items-center border-t border-gray-200 pt-3 text-sm text-gray-800">
             <FiThermometer className="mr-2 h-4 w-4 text-orange-500" />
             <div>
               Feels like: {weatherService.formatTemperature(location.feelsLike, units)}

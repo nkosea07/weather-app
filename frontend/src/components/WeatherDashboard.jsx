@@ -54,7 +54,7 @@ const WeatherDashboard = ({ locations, units, onDelete, onToggleFavorite, onRefr
           <div className="rounded-2xl border border-dashed border-white/30 bg-white/5 py-14 text-center">
             <FiCloud className="mx-auto h-12 w-12 text-cyan-200/70" />
             <h3 className="mt-3 text-lg font-semibold text-white">No locations yet</h3>
-            <p className="mt-2 text-sm text-slate-200">
+            <p className="mt-2 text-sm text-slate-100">
               Get started by adding a location to track.
             </p>
             <button
