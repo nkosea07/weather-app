@@ -95,25 +95,13 @@ function App() {
   };
 
   const handleLocationDeleted = async (id) => {
-    try {
-      await weatherService.deleteLocation(id);
-      await fetchLocations();
-      toast.success('Location deleted');
-    } catch (error) {
-      console.error('Failed to delete location:', error);
-      toast.error('Failed to delete location');
-    }
+    await fetchLocations();
+    toast.success('Location deleted');
   };
 
   const handleToggleFavorite = async (id, currentStatus) => {
-    try {
-      await weatherService.updateLocation(id, { isFavorite: !currentStatus });
-      await fetchLocations();
-      toast.success(!currentStatus ? 'Added to favorites' : 'Removed from favorites');
-    } catch (error) {
-      console.error('Failed to update favorite status:', error);
-      toast.error('Failed to update favorite status');
-    }
+    await fetchLocations();
+    toast.success(!currentStatus ? 'Added to favorites' : 'Removed from favorites');
   };
 
   const handleUnitsChange = (newUnits) => {
