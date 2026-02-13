@@ -10,7 +10,7 @@ const Navigation = ({ activeView, onViewChange }) => {
   ];
 
   return (
-    <nav className="glass-panel sticky top-4 z-30 animate-fade-in-up">
+    <nav className="glass-panel sticky top-4 z-30 animate-fade-in-up" aria-label="Main navigation">
       <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center">
           <h1 className="text-xl font-bold text-white">Weather Platform</h1>
@@ -24,6 +24,7 @@ const Navigation = ({ activeView, onViewChange }) => {
               <button
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
+                aria-current={active ? 'page' : undefined}
                 className={`inline-flex min-w-fit items-center rounded-xl px-3 py-2 text-sm font-medium transition ${
                   active
                     ? 'bg-sky-400 text-slate-900 shadow-md'
