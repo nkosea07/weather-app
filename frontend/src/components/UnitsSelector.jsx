@@ -11,7 +11,7 @@ const UnitsSelector = ({ units, onUnitsChange, showLabel = true }) => {
   return (
     <div className="flex items-center gap-2">
       {showLabel && (
-        <div className="flex items-center text-sm text-slate-200">
+        <div className="flex items-center text-sm text-white">
           <FiSettings className="mr-1 h-4 w-4" />
           <span>Units</span>
         </div>
