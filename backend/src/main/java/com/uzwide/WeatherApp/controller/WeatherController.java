@@ -42,7 +42,7 @@ public class WeatherController {
     @PutMapping("/locations/{id}")
     public ResponseEntity<Location> updateLocation(
             @PathVariable Long id,
-            @Valid @RequestBody LocationDTO locationDTO) {
+            @RequestBody LocationDTO locationDTO) {
         Location location = weatherService.updateLocation(id, locationDTO);
         return ResponseEntity.ok(location);
     }
