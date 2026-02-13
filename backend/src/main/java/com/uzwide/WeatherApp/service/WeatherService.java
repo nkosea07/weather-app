@@ -86,11 +86,18 @@ public class WeatherService {
         Location location = locationRepository.findById(locationId)
                 .orElseThrow(() -> new LocationNotFoundException("Location not found with id: " + locationId));
 
-        WeatherSnapshot latestSnapshot = weatherSnapshotRepository
-                .findFirstByLocationOrderByFetchedAtDesc(location)
-                .orElseGet(() -> fetchAndSaveWeatherData(location, units));
-
-        return mapToResponseDTO(location, latestSnapshot);
+        Optional<WeatherSnapshot> snapshot = weatherSnapshotRepository
+                .findFirstByLocationOrderByFetchedAtDesc(location);
+        if (snapshot.isPresent()) {
+            return mapToResponseDTO(location, snapshot.get());
+        }
+        try {
+            WeatherSnapshot newSnapshot = fetchAndSaveWeatherData(location, units);
+            return mapToResponseDTO(location, newSnapshot);
+        } catch (Exception e) {
+            log.warn("Failed to fetch weather for {}: {}", location.getName(), e.getMessage());
+            return mapToLocationOnlyDTO(location);
+        }
     }
 
     public List<WeatherResponseDTO> getAllLocationsWithWeather(Units units) {
@@ -100,11 +107,16 @@ public class WeatherService {
                 .map(location -> {
                     Optional<WeatherSnapshot> snapshot = weatherSnapshotRepository
                             .findFirstByLocationOrderByFetchedAtDesc(location);
-                    return snapshot.map(s -> mapToResponseDTO(location, s))
-                            .orElseGet(() -> {
-                                WeatherSnapshot newSnapshot = fetchAndSaveWeatherData(location, units);
-                                return mapToResponseDTO(location, newSnapshot);
-                            });
+                    if (snapshot.isPresent()) {
+                        return mapToResponseDTO(location, snapshot.get());
+                    }
+                    try {
+                        WeatherSnapshot newSnapshot = fetchAndSaveWeatherData(location, units);
+                        return mapToResponseDTO(location, newSnapshot);
+                    } catch (Exception e) {
+                        log.warn("Failed to fetch weather for {}: {}", location.getName(), e.getMessage());
+                        return mapToLocationOnlyDTO(location);
+                    }
                 })
                 .collect(Collectors.toList());
     }
@@ -253,6 +265,16 @@ public class WeatherService {
                 .weatherDescription(weatherSnapshot.getWeatherDescription())
                 .weatherIcon(weatherSnapshot.getWeatherIcon())
                 .lastUpdated(weatherSnapshot.getFetchedAt())
+                .isFavorite(location.getIsFavorite())
+                .build();
+    }
+
+    private WeatherResponseDTO mapToLocationOnlyDTO(Location location) {
+        return WeatherResponseDTO.builder()
+                .locationId(location.getId())
+                .locationName(location.getName())
+                .displayName(location.getDisplayName())
+                .country(location.getCountry())
                 .isFavorite(location.getIsFavorite())
                 .build();
     }
