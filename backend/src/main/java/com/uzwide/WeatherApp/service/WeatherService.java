@@ -137,10 +137,10 @@ public class WeatherService {
     @Transactional
     @CacheEvict(value = "weather", key = "#id")
     public void deleteLocation(Long id) {
-        if (!locationRepository.existsById(id)) {
-            throw new LocationNotFoundException("Location not found with id: " + id);
-        }
-        locationRepository.deleteById(id);
+        Location location = locationRepository.findById(id)
+                .orElseThrow(() -> new LocationNotFoundException("Location not found with id: " + id));
+        weatherSnapshotRepository.deleteByLocation(location);
+        locationRepository.delete(location);
     }
 
     private WeatherSnapshot fetchAndSaveWeatherData(Location location, Units units) {

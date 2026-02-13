@@ -18,4 +18,6 @@ public interface WeatherSnapshotRepository extends JpaRepository<WeatherSnapshot
     List<WeatherSnapshot> findRecentSnapshots(Location location, LocalDateTime since);
 
     void deleteByFetchedAtBefore(LocalDateTime cutoff);
+
+    void deleteByLocation(Location location);
 }
