@@ -133,10 +133,10 @@ class WeatherServiceTest {
 
     @Test
     void deleteLocationThrowsWhenLocationMissing() {
-        when(locationRepository.existsById(99L)).thenReturn(false);
+        when(locationRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(LocationNotFoundException.class, () -> weatherService.deleteLocation(99L));
-        verify(locationRepository, never()).deleteById(any(Long.class));
+        verify(locationRepository, never()).delete(any(Location.class));
     }
 
     @Test
