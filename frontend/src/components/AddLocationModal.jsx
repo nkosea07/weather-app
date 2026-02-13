@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiX, FiSearch, FiMapPin, FiNavigation, FiWifiOff, FiCrosshair } from 'react-icons/fi';
 import weatherService from '../services/weatherService';
 
@@ -79,6 +79,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
   const [error, setError] = useState(null);
   const [infoMessage, setInfoMessage] = useState('');
 
+  const modalRef = useRef(null);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -308,6 +309,39 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
     }
   };
 
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      return;
+    }
+    if (e.key === 'Tab' && modalRef.current) {
+      const focusable = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, handleKeyDown]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -365,10 +399,10 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/20 bg-white shadow-soft">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="add-location-modal-title" className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/20 bg-white shadow-soft">
         <div className="flex items-center justify-between border-b border-slate-200/80 bg-slate-50 px-6 py-5">
           <div>
-            <h2 className="text-xl font-semibold text-slate-800">Add location</h2>
+            <h2 id="add-location-modal-title" className="text-xl font-semibold text-slate-800">Add location</h2>
             <p className="mt-1 text-sm text-slate-500">
               Search by city or pick coordinates with map/manual fallback.
             </p>
@@ -499,6 +533,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                   type="text"
                   value={manualLocation.displayName}
                   onChange={(event) => updateManualField('displayName', event.target.value)}
+                  aria-label="Display name"
                   placeholder="Display name (optional)"
                   className="rounded-xl border border-slate-300 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
                 />
@@ -506,6 +541,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                   type="text"
                   value={manualLocation.name}
                   onChange={(event) => updateManualField('name', event.target.value)}
+                  aria-label="City or locality name"
                   placeholder="City/locality name (optional)"
                   className="rounded-xl border border-slate-300 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
                 />
@@ -513,6 +549,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                   type="text"
                   value={manualLocation.latitude}
                   onChange={(event) => updateManualField('latitude', event.target.value)}
+                  aria-label="Latitude"
                   placeholder="Latitude (e.g. -33.9249)"
                   className="rounded-xl border border-slate-300 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
                 />
@@ -520,6 +557,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                   type="text"
                   value={manualLocation.longitude}
                   onChange={(event) => updateManualField('longitude', event.target.value)}
+                  aria-label="Longitude"
                   placeholder="Longitude (e.g. 18.4241)"
                   className="rounded-xl border border-slate-300 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
                 />
@@ -527,6 +565,7 @@ const AddLocationModal = ({ isOpen, onClose, onLocationAdded }) => {
                   type="text"
                   value={manualLocation.country}
                   onChange={(event) => updateManualField('country', event.target.value.toUpperCase())}
+                  aria-label="Country code"
                   placeholder="Country code (optional, 2 letters)"
                   className="rounded-xl border border-slate-300 px-4 py-2.5 text-slate-700 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200 sm:col-span-2"
                 />

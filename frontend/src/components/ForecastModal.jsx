@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FiX } from 'react-icons/fi';
 import weatherService from '../services/weatherService';
 import { format } from 'date-fns';
@@ -45,14 +45,36 @@ const ForecastModal = ({ isOpen, onClose, location, units }) => {
     return weatherService.getWeatherIconUrl(iconCode);
   };
 
+  const modalRef = useRef(null);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') onClose();
+    if (e.key === 'Tab' && modalRef.current) {
+      const focusable = modalRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      setTimeout(() => modalRef.current?.querySelector('button')?.focus(), 0);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, handleKeyDown]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-white/20 bg-white shadow-soft">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="forecast-modal-title">
+      <div ref={modalRef} className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-white/20 bg-white shadow-soft">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-slate-50 p-6">
           <div>
-            <h2 className="text-xl font-semibold text-slate-800">
+            <h2 id="forecast-modal-title" className="text-xl font-semibold text-slate-800">
               5-Day Forecast
             </h2>
             <p className="mt-1 text-sm text-slate-600">

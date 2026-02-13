@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import WeatherDashboard from './components/WeatherDashboard';
 import DashboardOverview from './components/DashboardOverview';
@@ -21,6 +21,9 @@ function App() {
   const [locationsError, setLocationsError] = useState(null);
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [sessionRefreshCount, setSessionRefreshCount] = useState(0);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(30);
+  const autoRefreshTimer = useRef(null);
 
   useEffect(() => {
     fetchUserPreferences();
@@ -34,10 +37,27 @@ function App() {
     }
   }, [units]);
 
+  useEffect(() => {
+    if (autoRefreshTimer.current) {
+      clearInterval(autoRefreshTimer.current);
+      autoRefreshTimer.current = null;
+    }
+    if (autoRefresh && refreshInterval > 0) {
+      autoRefreshTimer.current = setInterval(() => {
+        fetchLocations();
+      }, refreshInterval * 60 * 1000);
+    }
+    return () => {
+      if (autoRefreshTimer.current) clearInterval(autoRefreshTimer.current);
+    };
+  }, [autoRefresh, refreshInterval]);
+
   const fetchUserPreferences = async () => {
     try {
       const preferences = await userPreferencesService.getUserPreferences();
       setUnits(preferences.defaultUnits || 'METRIC');
+      setAutoRefresh(preferences.autoRefreshEnabled || false);
+      setRefreshInterval(preferences.refreshIntervalMinutes || 30);
     } catch (error) {
       console.error('Failed to fetch user preferences:', error);
       toast.error('Failed to load user preferences');

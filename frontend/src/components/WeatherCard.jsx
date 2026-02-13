@@ -141,19 +141,20 @@ const WeatherCard = ({
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={handleEditKeyDown}
                   autoFocus
+                  aria-label="Edit display name"
                   className="w-full rounded-md bg-white/20 px-2 py-0.5 text-lg font-bold text-white placeholder-white/60 outline-none focus:bg-white/30"
                 />
-                <button onClick={handleSaveDisplayName} className="rounded-lg p-1 transition hover:bg-white/20" title="Save">
+                <button onClick={handleSaveDisplayName} className="rounded-lg p-1 transition hover:bg-white/20" aria-label="Save display name" title="Save">
                   <FiCheck className="h-4 w-4" />
                 </button>
-                <button onClick={cancelEditing} className="rounded-lg p-1 transition hover:bg-white/20" title="Cancel">
+                <button onClick={cancelEditing} className="rounded-lg p-1 transition hover:bg-white/20" aria-label="Cancel editing" title="Cancel">
                   <FiX className="h-4 w-4" />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-1">
                 <h3 className="truncate text-lg font-bold">{location.displayName || location.locationName}</h3>
-                <button onClick={startEditing} className="rounded-lg p-1 transition hover:bg-white/20" title="Edit display name">
+                <button onClick={startEditing} className="rounded-lg p-1 transition hover:bg-white/20" aria-label="Edit display name" title="Edit display name">
                   <FiEdit2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -213,6 +214,7 @@ const WeatherCard = ({
             <button
               onClick={handleRefresh}
               disabled={refreshing}
+              aria-label="Refresh weather data"
               className="mt-2 inline-flex items-center rounded-lg bg-sky-500 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-sky-600 disabled:opacity-50"
             >
               <FiRefreshCw className={`mr-1 h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
