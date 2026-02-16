@@ -27,14 +27,107 @@ Weather platform with a Spring Boot backend and React frontend.
 - Java 17+
 - Node.js 18+
 - npm 9+
-- PostgreSQL 14+ (for local non-Docker backend runs)
-- OpenWeatherMap API key
+- Docker and Docker Compose
+- PostgreSQL 14+ (only if running the backend outside Docker)
+- An OpenWeatherMap API key — get one free at <https://openweathermap.org/api>
 
-## Local Development
+---
 
-### 1. Backend
+## Getting Started with Docker Compose (Recommended)
 
-Set environment variables:
+This is the fastest way to run the full stack. Docker Compose starts the database, backend, and frontend for you.
+
+### Step 1 — Clone the repository
+
+```bash
+git clone https://github.com/nkosea07/weather-app.git
+cd weather-app
+```
+
+### Step 2 — Create a `.env` file
+
+Create a `.env` file in the project root with your configuration:
+The `.env.example` file shows the required variables and their default values.
+
+```bash
+# Required
+WEATHER_API_KEY=your_openweathermap_api_key
+
+# Optional (defaults shown)
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5434/weather_db
+SPRING_DATASOURCE_USERNAME=weather_user
+SPRING_DATASOURCE_PASSWORD=your_password
+```
+
+### Step 3 — Build and start all services
+
+```bash
+docker compose up --build
+```
+
+This will:
+1. Start a **PostgreSQL 16** database container
+2. Wait for the database health check to pass
+3. Start the **Spring Boot backend** (runs Flyway migrations automatically)
+4. Start the **React frontend**
+
+### Step 4 — Open the app
+
+| Service      | URL                        |
+|--------------|----------------------------|
+| Frontend     | `http://localhost:3000`     |
+| Backend API  | `http://localhost:8080/api` |
+| PostgreSQL   | `localhost:5434`            |
+
+> **Note:** The database is exposed on port **5434** (not the default 5432) to avoid conflicts with any locally installed PostgreSQL.
+
+### Step 5 — Stopping the app
+
+```bash
+# Stop all services
+docker compose down
+
+# Stop and delete the database volume (fresh start)
+docker compose down -v
+```
+
+### Other useful Docker commands
+
+```bash
+# Run in detached (background) mode
+docker compose up --build -d
+
+# View live logs
+docker compose logs -f
+
+# View logs for a single service
+docker compose logs -f backend
+
+# Rebuild a single service
+docker compose up --build backend
+```
+
+---
+
+## Local Development (Without Docker)
+
+Use this approach if you want to run the backend or frontend individually outside of Docker.
+
+### Step 1 — Set up PostgreSQL
+
+Install PostgreSQL 14+ and create the database and user:
+
+```bash
+psql -U postgres
+```
+
+```sql
+CREATE USER weather_user WITH PASSWORD 'your_password';
+CREATE DATABASE weather_db OWNER weather_user;
+\q
+```
+
+### Step 2 — Configure environment variables
 
 ```bash
 export WEATHER_API_KEY=your_openweathermap_api_key
@@ -43,7 +136,9 @@ export SPRING_DATASOURCE_USERNAME=weather_user
 export SPRING_DATASOURCE_PASSWORD=your_password
 ```
 
-Run backend from repo root:
+### Step 3 — Run the backend
+
+From the repo root:
 
 ```bash
 ./mvnw -pl backend spring-boot:run
@@ -51,7 +146,7 @@ Run backend from repo root:
 
 Backend API: `http://localhost:8080`
 
-### 2. Frontend
+### Step 4 — Run the frontend
 
 ```bash
 cd frontend
@@ -61,29 +156,9 @@ npm start
 
 Frontend app: `http://localhost:3000`
 
-## Docker Compose (Full Stack)
+---
 
-### Quick Start
-
-```bash
-# 1. Set your OpenWeatherMap API key
-export WEATHER_API_KEY=your_openweathermap_api_key
-
-# 2. Start all services
-docker compose up --build
-```
-
-### Services
-
-| Service | URL | Description |
-|---|---|---|
-| **frontend** | `http://localhost:3000` | React app (depends on backend) |
-| **backend** | `http://localhost:8080` | Spring Boot API (waits for DB health check) |
-| **db** | `localhost:5432` | PostgreSQL 16 with persistent volume |
-
-### Environment Variables
-
-Set these in your shell or in a `.env` file in the project root.
+## Environment Variables Reference
 
 | Variable | Default | Used By | Description |
 |---|---|---|---|
@@ -91,25 +166,6 @@ Set these in your shell or in a `.env` file in the project root.
 | `POSTGRES_DB` | `weather_db` | db, backend | PostgreSQL database name |
 | `POSTGRES_USER` | `weather_user` | db, backend | PostgreSQL username |
 | `REACT_APP_API_URL` | `http://localhost:8080/api` | frontend | Backend API base URL |
-
-### Commands
-
-```bash
-# Start all services (foreground)
-docker compose up --build
-
-# Start in detached (background) mode
-docker compose up --build -d
-
-# View logs
-docker compose logs -f
-
-# Stop all services
-docker compose down
-
-# Stop and remove data volume (fresh database)
-docker compose down -v
-```
 
 ## Testing
 
